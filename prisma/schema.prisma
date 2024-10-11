@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  rooms     Room[]   @relation("RoomParticipants")
+  games     Game[]   @relation("GameParticipants")
+}
+
+model Room {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]   @relation("RoomParticipants")
+  games     Game[]
+}
+
+model Game {
+  id        String     @id @default(uuid())
+  roomId    String
+  room      Room       @relation(fields: [roomId], references: [id])
+  status    GameStatus
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  players   User[]     @relation("GameParticipants")
+  rounds    Round[]
+}
+
+model Round {
+  id          String    @id @default(uuid())
+  gameId      String
+  game        Game      @relation(fields: [gameId], references: [id])
+  roundNumber Int
+  phase       GamePhase
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  actions     Action[]
+}
+
+model Action {
+  id         String     @id @default(uuid())
+  roundId    String
+  round      Round      @relation(fields: [roundId], references: [id])
+  playerId   String
+  actionType ActionType
+  targetId   String?
+  createdAt  DateTime   @default(now())
+}
+
+enum GameStatus {
+  WAITING
+  IN_PROGRESS
+  FINISHED
+}
+
+enum GamePhase {
+  NIGHT
+  DAY
+  VOTING
+}
+
+enum ActionType {
+  MAFIA_KILL
+  DOCTOR_SAVE
+  COP_INVESTIGATE
+  VOTE
+}
