@@ -1,12 +1,14 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 
 
 @Injectable()
 export class GameService {
-    constructor(@Inject(CACHE_MANAGER) private readonly cache: Cache) {
+    constructor(@Inject(CACHE_MANAGER) private readonly cache: Cache,
+        private readonly prismaService: PrismaService) {
     }
 
     async createGame(userId: string, roomName: string): Promise<any> {
@@ -23,8 +25,14 @@ export class GameService {
     }
 
     async joinGame(userId: string, gameId: string): Promise<any> {
-        const gameStr = await this.cache.get(gameId);
-        if (!gameStr) throw new Error('Game not found');
+        console.log("gameId", gameId);
+
+        const gameStrFromCache = await this.cache.get(`game:${gameId}`);
+ 
+    
+        if (!gameStrFromCache) throw new Error('Game not found');
+
+        const gameStr = gameStrFromCache;
 
         const game = JSON.parse(gameStr as string);
         if (game.status !== 'waiting') throw new Error('Game already started');
@@ -36,7 +44,7 @@ export class GameService {
     }
 
     async startGame(gameId: string): Promise<any> {
-        const gameStr = await this.cache.get(gameId);
+        const gameStr = await this.cache.get(`game:${gameId}`);
         if (!gameStr) throw new Error('Game not found');
 
         const game = JSON.parse(gameStr as string);
